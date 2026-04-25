@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Excel — Capítulo 1: Workbooks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-dark:   #0F5C34;
+    --green-mid:    #1D6F42;
+    --green-light:  #EAF3DE;
+    --green-border: #639922;
+    --green-text:   #27500A;
+    --red-mid:      #A32D2D;
+    --red-light:    #FCEBEB;
+    --red-border:   #A32D2D;
+    --red-text:     #501313;
+    --blue-badge-bg:#E6F1FB;
+    --blue-badge-tx:#0C447C;
+    --bg-page:      #F5F5F3;
+    --bg-card:      #FFFFFF;
+    --bg-secondary: #F1F0EA;
+    --border:       rgba(0,0,0,0.12);
+    --border-md:    rgba(0,0,0,0.22);
+    --text-primary: #1A1A1A;
+    --text-secondary:#666660;
+    --radius-md:    8px;
+    --radius-lg:    12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-page:      #1A1A18;
+      --bg-card:      #242422;
+      --bg-secondary: #2C2C2A;
+      --border:       rgba(255,255,255,0.1);
+      --border-md:    rgba(255,255,255,0.2);
+      --text-primary: #EFEFED;
+      --text-secondary:#A0A09A;
+      --green-light:  #173404;
+      --green-text:   #C0DD97;
+      --green-border: #3B6D11;
+      --red-light:    #3D1010;
+      --red-text:     #F7C1C1;
+      --red-border:   #791F1F;
+      --blue-badge-bg:#042C53;
+      --blue-badge-tx:#B5D4F4;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  .container { width: 100%; max-width: 680px; }
+
+  .xl-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+  .xl-logo {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--green-mid); display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .xl-logo svg { width: 26px; height: 26px; }
+  .xl-title { font-size: 18px; font-weight: 500; color: var(--text-primary); }
+  .xl-sub   { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+  .cell-bar {
+    display: flex; gap: 4px; align-items: center;
+    margin-bottom: 1.5rem; flex-wrap: wrap;
+  }
+  .cell {
+    width: 30px; height: 26px; border: 0.5px solid var(--border);
+    border-radius: 4px; display: flex; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 500;
+    color: var(--text-secondary); background: var(--bg-secondary);
+    transition: all 0.2s;
+  }
+  .cell.done   { background: var(--green-mid); border-color: var(--green-mid); color: #fff; }
+  .cell.wrong  { background: var(--red-mid);   border-color: var(--red-mid);   color: #fff; }
+  .cell.active { border: 1.5px solid var(--green-mid); color: var(--green-mid); background: var(--bg-card); }
+  .cell-eq { font-size: 12px; color: var(--text-secondary); margin-left: 6px; white-space: nowrap; }
+
+  .q-card {
+    background: var(--bg-card); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .q-badge {
+    display: inline-block; font-size: 11px; padding: 3px 10px;
+    border-radius: 99px; background: var(--blue-badge-bg);
+    color: var(--blue-badge-tx); font-weight: 500; margin-bottom: 0.75rem;
+  }
+  .q-text { font-size: 15px; color: var(--text-primary); line-height: 1.65; margin-bottom: 1rem; }
+
+  code {
+    font-family: "Courier New", monospace;
+    background: var(--bg-secondary);
+    padding: 2px 6px; border-radius: 4px; font-size: 13px;
+  }
+
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-md); background: var(--bg-secondary);
+    color: var(--text-primary); font-size: 14px; cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    text-align: left; width: 100%; line-height: 1.5; font-family: inherit;
+  }
+  .opt:hover:not(:disabled) { background: var(--bg-card); border-color: var(--border-md); }
+  .opt:disabled { cursor: default; }
+  .opt-icon {
+    width: 24px; height: 24px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 11px; font-weight: 600;
+    background: var(--bg-card); border: 0.5px solid var(--border);
+    color: var(--text-secondary); transition: all 0.15s;
+  }
+  .opt.correct             { background: var(--green-light); border-color: var(--green-border); color: var(--green-text); }
+  .opt.correct .opt-icon   { background: var(--green-mid);   border-color: var(--green-mid);   color: #fff; }
+  .opt.incorrect           { background: var(--red-light);   border-color: var(--red-border);  color: var(--red-text); }
+  .opt.incorrect .opt-icon { background: var(--red-mid);     border-color: var(--red-mid);     color: #fff; }
+  .opt.reveal              { background: var(--green-light); border-color: #97C459; color: var(--green-text); opacity: 0.75; }
+  .opt.reveal .opt-icon    { background: #97C459; border-color: #97C459; color: #fff; }
+
+  .feedback {
+    margin-top: 12px; padding: 10px 14px; border-radius: var(--radius-md);
+    font-size: 13px; line-height: 1.6; display: none;
+  }
+  .feedback.correct  { background: var(--green-light); color: var(--green-text); display: flex; gap: 8px; align-items: flex-start; }
+  .feedback.incorrect{ background: var(--red-light);   color: var(--red-text);   display: flex; gap: 8px; align-items: flex-start; }
+  .fb-icon { flex-shrink: 0; font-weight: 600; }
+
+  .desktop-note {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 99px; background: #FFF4E0; color: #7A4F00;
+    border: 0.5px solid #F0C060; margin-left: 8px; vertical-align: middle;
+  }
+
+  .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; gap: 8px; }
+  .nav-btn {
+    padding: 8px 20px; border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-md); background: var(--bg-secondary);
+    color: var(--text-primary); font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .nav-btn:hover:not(:disabled) { background: var(--bg-card); }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
+  .nav-btn.primary { background: var(--green-mid); border-color: var(--green-mid); color: #fff; }
+  .nav-btn.primary:hover:not(:disabled) { background: var(--green-dark); }
+  .counter { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+
+  .score-wrap { text-align: center; padding: 1.5rem 1rem; }
+  .score-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 1.25rem 0; }
+  .score-metric { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 0.85rem 0.5rem; }
+  .score-metric .val { font-size: 26px; font-weight: 500; color: var(--text-primary); }
+  .score-metric .lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .score-title { font-size: 18px; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; }
+  .score-msg   { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem; }
+  .score-icon  { font-size: 36px; margin-bottom: 0.5rem; }
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  footer { text-align: center; margin-top: 2rem; font-size: 12px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="xl-header">
+    <div class="xl-logo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="3" width="20" height="18" rx="2" fill="white" fill-opacity="0.15"/>
+        <path d="M2 8h20M8 8v13M16 8v13" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+        <rect x="5" y="11" width="4" height="3" rx="0.5" fill="white" fill-opacity="0.4"/>
+        <rect x="11" y="11" width="4" height="3" rx="0.5" fill="white" fill-opacity="0.4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="xl-title">Capítulo 1 — Workbooks</div>
+      <div class="xl-sub">Libros de trabajo · 8 preguntas</div>
+    </div>
+  </div>
+
+  <div class="cell-bar" id="cellbar"></div>
+  <div id="quiz"></div>
+
+  <footer>Curso de Luke Barousse · Cuestionario generado con Claude</footer>
+</div>
+
+<script>
+const Qs = [
+  {
+    q: "¿Qué permite hacer la opción Move or Copy al hacer clic derecho en una pestaña de hoja?",
+    opts: [
+      "Solo renombrar y cambiar el color de la pestaña",
+      "Copiar o mover la hoja dentro del mismo workbook únicamente",
+      "Copiar o mover la hoja tanto dentro del mismo workbook como a otro workbook abierto",
+      "Exportar la hoja como un archivo PDF independiente"
+    ],
+    ok: 2,
+    exp: "Move or Copy te permite elegir el workbook destino desde un desplegable, seleccionar dónde insertar la hoja, y marcar 'Create a copy' si quieres duplicarla sin mover el original. Es el método más seguro según Luke. ⚠️ Solo disponible en Excel de escritorio.",
+    desktop: true
+  },
+  {
+    q: "¿Qué formato tiene una fórmula que referencia una celda en otro workbook?",
+    opts: [
+      "=NombreHoja!A1",
+      "=NombreArchivo>NombreHoja>A1",
+      "=[NombreArchivo.xlsx]NombreHoja!A1",
+      "=LINK(NombreArchivo, NombreHoja, A1)"
+    ],
+    ok: 2,
+    exp: "La sintaxis correcta es =[NombreArchivo.xlsx]NombreHoja!A1. Los corchetes identifican el archivo, seguido del nombre de la hoja y el signo ! que separa la hoja de la celda. ⚠️ Solo disponible en Excel de escritorio.",
+    desktop: true
+  },
+  {
+    q: "¿Cómo se referencia la celda A1 de la hoja llamada 'Jan' dentro del mismo workbook?",
+    opts: [
+      "=Jan>A1",
+      "=Jan::A1",
+      "=[Jan]A1",
+      "=Jan!A1"
+    ],
+    ok: 3,
+    exp: "Cuando la hoja está en el mismo workbook, la sintaxis es =NombreHoja!A1. El signo ! separa el nombre de la hoja del nombre de la celda. No necesitas corchetes porque no hay un archivo externo involucrado."
+  },
+  {
+    q: "¿Qué significa el signo ! en una referencia como =Jan!A1?",
+    opts: [
+      "Indica que la fórmula tiene un error",
+      "Separa el nombre de la hoja del nombre de la celda",
+      "Indica que la celda está bloqueada",
+      "Es parte del nombre del archivo"
+    ],
+    ok: 1,
+    exp: "El signo ! es el separador que Excel usa entre el nombre de la hoja y la referencia de celda. Es como decir: 'en la hoja Jan, ve a la celda A1'."
+  },
+  {
+    q: "¿Qué hace el atajo Ctrl+Shift+↓ en Excel?",
+    opts: [
+      "Mueve el cursor al final del archivo",
+      "Selecciona todas las filas con datos hacia abajo desde la celda activa",
+      "Copia todo el contenido de la columna",
+      "Agrupa las filas seleccionadas"
+    ],
+    ok: 1,
+    exp: "Ctrl+Shift+↓ extiende la selección hacia abajo hasta la última celda con datos. Es útil para seleccionar rangos grandes rápidamente sin tener que arrastrar el mouse."
+  },
+  {
+    q: "¿Qué precaución debes tener al usar Ctrl+Shift+↓ para seleccionar un rango grande?",
+    opts: [
+      "Solo funciona en la columna A",
+      "Se detiene en celdas vacías, por eso siempre empieza desde A1",
+      "Selecciona también celdas con formato pero sin contenido",
+      "No funciona si hay fechas en el rango"
+    ],
+    ok: 1,
+    exp: "Si hay celdas vacías en medio del rango, Ctrl+Shift+↓ se detiene ahí. Por eso Luke recomienda siempre empezar desde A1 e ir hacia la derecha y hacia abajo para no perder datos."
+  },
+  {
+    q: "¿Para qué sirve la opción Version History en el menú File?",
+    opts: [
+      "Para ver cuántas veces se ha abierto el archivo",
+      "Para revertir el archivo a una versión guardada anteriormente",
+      "Para comparar dos versiones del mismo archivo lado a lado",
+      "Para exportar el historial de cambios como PDF"
+    ],
+    ok: 1,
+    exp: "Version History permite recuperar versiones anteriores del archivo. Requiere tener el archivo guardado en OneDrive. Es muy útil si cometiste un error y necesitas volver atrás. ⚠️ Solo disponible en Excel de escritorio con OneDrive.",
+    desktop: true
+  },
+  {
+    q: "¿Qué opción del menú File usarías para exportar tu Excel como PDF?",
+    opts: [
+      "Save As",
+      "Share",
+      "Export",
+      "Print"
+    ],
+    ok: 2,
+    exp: "La opción Export en el menú File permite guardar el archivo como PDF. Save As guarda en formato Excel, Share comparte via OneDrive, y Print envía a impresora. ⚠️ Solo disponible en Excel de escritorio.",
+    desktop: true
+  }
+];
+
+const letters = ["A","B","C","D"];
+let cur = 0, score = 0, answers = [];
+
+function sound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    if (type === "ok") {
+      o.frequency.setValueAtTime(523, ctx.currentTime);
+      o.frequency.setValueAtTime(659, ctx.currentTime + 0.12);
+      o.frequency.setValueAtTime(784, ctx.currentTime + 0.24);
+      g.gain.setValueAtTime(0.25, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+      o.start(); o.stop(ctx.currentTime + 0.55);
+    } else {
+      o.frequency.setValueAtTime(280, ctx.currentTime);
+      o.frequency.setValueAtTime(180, ctx.currentTime + 0.18);
+      g.gain.setValueAtTime(0.25, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+      o.start(); o.stop(ctx.currentTime + 0.45);
+    }
+  } catch(e) {}
+}
+
+function renderCells() {
+  const bar = document.getElementById("cellbar");
+  bar.innerHTML = Qs.map((_, i) => {
+    let cls = "cell";
+    if (answers[i] !== undefined) cls += answers[i] === Qs[i].ok ? " done" : " wrong";
+    else if (i === cur) cls += " active";
+    return `<div class="${cls}">${i + 1}</div>`;
+  }).join("") + `<span class="cell-eq">= ${score}/${Qs.length} correctas</span>`;
+}
+
+function pick(idx) {
+  if (answers[cur] !== undefined) return;
+  answers[cur] = idx;
+  if (idx === Qs[cur].ok) { score++; sound("ok"); } else { sound("no"); }
+  render();
+}
+
+function render() {
+  if (cur >= Qs.length) { renderScore(); return; }
+  renderCells();
+  const q = Qs[cur];
+  const done = answers[cur] !== undefined;
+  const chosen = answers[cur];
+
+  const desktopBadge = q.desktop ? `<span class="desktop-note">⚠️ Solo escritorio</span>` : "";
+
+  const optsHTML = q.opts.map((o, i) => {
+    let cls = "opt";
+    if (done) {
+      if (i === q.ok) cls += " correct";
+      else if (i === chosen) cls += " incorrect";
+    }
+    const icon = done ? (i === q.ok ? "✓" : i === chosen ? "✗" : letters[i]) : letters[i];
+    return `<button class="${cls}" onclick="pick(${i})" ${done ? "disabled" : ""}>
+      <span class="opt-icon">${icon}</span>${o}
+    </button>`;
+  }).join("");
+
+  let fbHTML = "";
+  if (done) {
+    const ok = chosen === q.ok;
+    fbHTML = `<div class="feedback ${ok ? "correct" : "incorrect"}">
+      <span class="fb-icon">${ok ? "✓" : "✗"}</span>
+      <span>${q.exp}</span>
+    </div>`;
+  }
+
+  const isLast = cur === Qs.length - 1;
+  const nextBtn = done && !isLast
+    ? `<button class="nav-btn primary" onclick="go(1)">Siguiente →</button>`
+    : done && isLast
+    ? `<button class="nav-btn primary" onclick="renderScore()">Ver resultado</button>`
+    : `<button class="nav-btn primary" disabled>Siguiente →</button>`;
+
+  document.getElementById("quiz").innerHTML = `
+    <div class="q-card">
+      <div class="q-badge">Pregunta ${cur + 1} de ${Qs.length} ${desktopBadge}</div>
+      <p class="q-text">${q.q}</p>
+      <div class="options">${optsHTML}</div>
+      ${fbHTML}
+    </div>
+    <div class="nav">
+      <button class="nav-btn" onclick="go(-1)" ${cur === 0 ? "disabled" : ""}>← Anterior</button>
+      <span class="counter">${score} correcta${score !== 1 ? "s" : ""} hasta ahora</span>
+      ${nextBtn}
+    </div>`;
+}
+
+function go(dir) { cur += dir; render(); }
+
+function renderScore() {
+  renderCells();
+  const pct = Math.round(score / Qs.length * 100);
+  let msg = "", icon = "", title = "";
+  if (pct === 100) { icon = "🏆"; title = "¡Perfecto!"; msg = "Dominaste Workbooks. Listo para la lección del Ribbon."; }
+  else if (pct >= 70) { icon = "✓"; title = "¡Buen resultado!"; msg = "Sólido. Repasa las celdas en rojo antes de continuar."; }
+  else { icon = "↩"; title = "Sigue practicando"; msg = "Vuelve al resumen de Workbooks y vuelve a intentarlo. Sin apuro."; }
+
+  document.getElementById("quiz").innerHTML = `
+    <div class="q-card score-wrap">
+      <div class="score-icon">${icon}</div>
+      <div class="score-title">${title}</div>
+      <div class="score-grid">
+        <div class="score-metric"><div class="val">${score}/${Qs.length}</div><div class="lbl">correctas</div></div>
+        <div class="score-metric"><div class="val">${pct}%</div><div class="lbl">precisión</div></div>
+        <div class="score-metric"><div class="val">${Qs.length - score}</div><div class="lbl">para repasar</div></div>
+      </div>
+      <p class="score-msg">${msg}</p>
+      <div class="btn-row">
+        <button class="nav-btn" onclick="restart()">↩ Reintentar</button>
+      </div>
+    </div>`;
+}
+
+function restart() { cur = 0; score = 0; answers = []; render(); }
+render();
+</script>
+</body>
+</html>
